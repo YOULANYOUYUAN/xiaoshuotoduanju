@@ -1,0 +1,4 @@
+# .gitignore 文件示例
+node_modules/
+.env
+*.log
