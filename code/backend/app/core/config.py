@@ -6,17 +6,18 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# 提取项目根目录路径
-BASE_DIR= Path(__file__).resolve().parents[3]
-# 拼接.env的路径，斜杠有拼接作用
-ENV_FILE = BASE_DIR/".env"
-# 加载.env中的环境变量，override是环境有冲突是否要覆盖
+# 提取项目工程的根目录路径，拼接.env的路径并加载.env中的环境配置
+BASE_DIR = Path(__file__).resolve().parents[3]
+
+# 拼接路径
+ENV_FILE = BASE_DIR / ".env"
 load_dotenv(ENV_FILE, override=False)
 
-# 冻结属性值，不允许配置类Settings实例化以后，被其他地方的程序修改
+
+# frozen=True 冻结属性值，不允许配置类Settings实例化以后，被其他地方的程序修改属性值
 @dataclass(frozen=True)
 class Settings(object):
-    """项目运行时配置对象，一次加载，后续如果改.env，不会被加载"""
+    """项目运行时配置对象。"""
     app_name: str = field(default_factory=lambda: os.getenv("APP_NAME", "App"))
     app_description: str = field(default_factory=lambda: os.getenv("APP_DESCRIPTION", "App description"))
     app_env: str = field(default_factory=lambda: os.getenv("APP_ENV", "development"))
@@ -41,6 +42,23 @@ class Settings(object):
     db_healthcheck_timeout: str = field(default_factory=lambda: os.getenv("DB_HEALTHCHECK_TIMEOUT", "5s"))
     db_healthcheck_retries: int = field(default_factory=lambda: int(os.getenv("DB_HEALTHCHECK_RETRIES", "5")))
 
-    user_default_admin_name:str = field(default_factory=lambda:os.getenv("USER_DEFAULT_ADMIN_NAME", "admin"))
-    user_default_admin_password:str = field(default_factory=lambda:os.getenv("USER_DEFAULT_ADMIN_PASSWORD", "admin123"))
+    redis_host: str = field(default_factory=lambda: os.getenv("REDIS_HOST", "127.0.0.1"))
+    redis_port: int = field(default_factory=lambda: int(os.getenv("REDIS_PORT", "6379")))
+    redis_db: int = field(default_factory=lambda: int(os.getenv("REDIS_DB", "0")))
+    redis_container_name: str = field(default_factory=lambda: os.getenv("REDIS_CONTAINER_NAME", "anonforge_dev_redis"))
+    redis_data_path: str = field(default_factory=lambda: os.getenv("REDIS_DATA_PATH", "./redis/data"))
+    redis_healthcheck_interval: str = field(default_factory=lambda: os.getenv("REDIS_HEALTHCHECK_INTERVAL", "10s"))
+    redis_healthcheck_timeout: str = field(default_factory=lambda: os.getenv("REDIS_HEALTHCHECK_TIMEOUT", "5s"))
+    redis_healthcheck_retries: int = field(default_factory=lambda: int(os.getenv("REDIS_HEALTHCHECK_RETRIES", "3")))
+
+    redis_token_key_prefix: str = field(default_factory=lambda: os.getenv("REDIS_TOKEN_KEY_PREFIX", "auth:token:"))
+    algorithm: str = field(default_factory=lambda: os.getenv("ALGORITHM", "HS256"))
+    access_token_expire_seconds: int = field(default_factory=lambda: int(os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS", "900")))
+    refresh_token_expire_seconds: int = field(default_factory=lambda: int(os.getenv("REFRESH_TOKEN_EXPIRE_SECONDS", "604800")))
+    secret_key: str = field(default_factory=lambda: os.getenv("SECRET_KEY", "dev-secret-key"))
+
+    user_default_admin_name: str = field(default_factory=lambda: os.getenv("USER_DEFAULT_ADMIN_NAME", "admin"))
+    user_default_admin_password: str = field(default_factory=lambda: os.getenv("USER_DEFAULT_ADMIN_PASSWORD", "admin123"))
+
+
 settings = Settings()

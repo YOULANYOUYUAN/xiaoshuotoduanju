@@ -8,6 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.config import settings
 from app.utils.string_tools import build_database_url
 
+from redis.asyncio import Redis
 
 def build_engine() -> AsyncEngine:
     """根据当前配置构建异步数据库引擎。
@@ -30,7 +31,6 @@ def build_engine() -> AsyncEngine:
     connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
     return create_async_engine(database_url, echo=False, connect_args=connect_args)
 
-
 engine = build_engine()
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -49,3 +49,10 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """为 FastAPI 依赖项提供异步数据库会话。"""
     async with async_session_maker() as session:
         yield session
+
+redis_client = Redis(
+    host=settings.redis_host,
+    port=settings.redis_port,
+    db=settings.redis_db,
+    decode_responses=True,
+)

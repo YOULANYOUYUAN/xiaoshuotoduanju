@@ -7,3 +7,6 @@ pillow
 httpx
 crewai
 alembic
+redis
+bcrypt
+pyJWT
