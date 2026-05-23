@@ -1,18 +1,21 @@
 from __future__ import annotations
+from collections.abc import AsyncGenerator
 
-from collections.abc import Generator
-
-from sqlmodel import Session, SQLMOdel, create_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
+from sqlmodel import SQLModel
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.utils.string_tools import build_database_url
 
-# 创建数据库的连接
-def build_engine():
-    """构建数据库引擎。
+
+def build_engine() -> AsyncEngine:
+    """根据当前配置构建异步数据库引擎。
+
     Returns:
-        Engine:基于当前配置创建的SQLModel/SQLAIchemy引擎实例。
+        AsyncEngine: 基于当前配置创建的 SQLModel 异步引擎实例。
     """
+    
     database_url = build_database_url(
         db_engine=settings.db_engine,
         db_driver=settings.db_driver,
@@ -22,28 +25,27 @@ def build_engine():
         db_user=settings.db_user,
         db_password=settings.db_password,
         db_sqlite_path=settings.db_sqlite_path,
-
     )
-    # 根据数据库类型动态设置连接参数，专门针对SQLite做线程限制的放宽处理。
+    # 根据数据库类型动态设置连接参数，专门针对 SQLite 做线程限制的放宽处理
     connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
-    return create_engine(database_url, echo=False, connect_args=connect_args)
+    return create_async_engine(database_url, echo=False, connect_args=connect_args)
+
 
 engine = build_engine()
+async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-def create_db_and_tables()-> None:
-    """根据当前SQLModel元数据创建数据库表。"""
-    SQLMOdel.metadata.create_all(engine)
+async def create_db_and_tables() -> None:
+    """使用异步数据库引擎创建所有 SQLModel 数据表。"""
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
 
-def drop_db_tables()-> None:
-    """根据当前SQLModel元数据创建数据库表。"""
-    SQLMOdel.metadata.drop_all(engine)
+async def drop_db_and_tables() -> None:
+    """使用异步数据库引擎删除所有 SQLModel 数据表。"""
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.drop_all)
 
-def get_session()-> Generator[Session, None, None]:
-    """提供数据库会话依赖。
-    Yields:
-        Session: 当前请求可服用的SQLModel会话对象。
-        """
-    with Session(engine) as session:
+
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    """为 FastAPI 依赖项提供异步数据库会话。"""
+    async with async_session_maker() as session:
         yield session
-# 创建数据库的客户端回话对象
-# 创建数据库的客户端基础类
