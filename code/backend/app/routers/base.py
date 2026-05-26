@@ -6,7 +6,6 @@ from typing import Any
 from fastapi import APIRouter
 from fastapi.params import Depends as DependsParam
 
-
 def route(
     path: str,
     *,
@@ -33,7 +32,7 @@ def route(
             dependencies = list(route_kwargs.get("dependencies") or [])
             dependencies.extend(middlewares)
             route_kwargs["dependencies"] = dependencies
-
+    
         setattr(
             func,
             "__route_config__",
@@ -90,3 +89,5 @@ class BaseView:
             endpoint = getattr(self, method_name)
             route_kwargs = {key: value for key, value in config.items() if key != "path"}
             self.router.add_api_route(config["path"], endpoint, **route_kwargs)
+
+    
