@@ -23,6 +23,7 @@ from app.schemas.project import (
     VisualStyleImageWrite,
     VisualStyleRead,
     VisualStyleUpdate,
+    DirectorManualCreate,
     DirectorManualFileRead,
     DirectorManualFileWrite,
     DirectorManualImageRead,
@@ -71,6 +72,8 @@ class ProjectView(BaseView):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
         if isinstance(exc, project_service.DirectorManualNotFoundError):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        if isinstance(exc, project_service.DirectorManualConflictError):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
         if isinstance(exc, project_service.DirectorManualValidationError):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
         raise exc
@@ -504,8 +507,9 @@ class ProjectView(BaseView):
         session: SessionDep,
     ) -> VisualStyleRead:
         """更新视觉风格。"""
+        current_user_public_id = self._current_user_public_id(request)
         try:
-            return await project_service.update_visual_style(session, style_path, payload)
+            return await project_service.update_visual_style(session, current_user_public_id, style_path, payload)
         except project_service.ProjectServiceError as exc:
             self._raise_as_http(exc)
 
@@ -687,6 +691,32 @@ class ProjectView(BaseView):
         """获取导演风格列表。"""
         try:
             return await project_service.list_director_manuals(session)
+        except project_service.ProjectServiceError as exc:
+            self._raise_as_http(exc)
+
+    @route(
+        "/director-manuals",
+        methods=["POST"],
+        response_model=DirectorManualRead,
+        status_code=status.HTTP_201_CREATED,
+        middlewares=PROJECT_ROUTE_MIDDLEWARES,
+        summary="创建导演风格",
+        description="创建导演手册目录并写入 Markdown 文件和图片；仅超级管理员可操作。",
+    )
+    async def create_director_manual(
+        self,
+        payload: DirectorManualCreate,
+        request: Request,
+        session: SessionDep,
+    ) -> DirectorManualRead:
+        """创建导演风格。"""
+        current_user_public_id = self._current_user_public_id(request)
+        try:
+            return await project_service.create_director_manual(
+                session,
+                current_user_public_id,
+                payload,
+            )
         except project_service.ProjectServiceError as exc:
             self._raise_as_http(exc)
 
