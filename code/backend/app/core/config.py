@@ -62,6 +62,7 @@ class Settings(object):
 
     visual_style_root: str = field(default_factory=lambda: os.getenv("VISUAL_STYLE_ROOT", "./data/skills/art_list"))
     director_manual_root: str = field(default_factory=lambda: os.getenv("DIRECTOR_MANUAL_ROOT", "./data/skills/director_manual"))
+    provider_template_path: str = field(default_factory=lambda: os.getenv("PROVIDER_TEMPLATE_PATH", "./data/provider_template.py"))
 
 settings = Settings()
 
