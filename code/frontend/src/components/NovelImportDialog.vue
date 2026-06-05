@@ -648,10 +648,10 @@ const importParsed = computed(() => parseNovelText(importRaw.value, currentSplit
 const getChapterLengthWarning = (draft: ImportChapterDraft) => {
   const length = draft.chapterData.length
   if (length < CHAPTER_SHORT_WARNING_LENGTH) {
-    return `本章字数 ${length}，低于 ${CHAPTER_SHORT_WARNING_LENGTH}字`
+    return `本章字数 ${length}，低于 ${CHAPTER_SHORT_WARNING_LENGTH}`
   }
   if (length > CHAPTER_LONG_WARNING_LENGTH) {
-    return `本章字数 ${length}，高于 ${CHAPTER_LONG_WARNING_LENGTH}字`
+    return `本章字数 ${length}，高于 ${CHAPTER_LONG_WARNING_LENGTH}`
   }
   return ''
 }
