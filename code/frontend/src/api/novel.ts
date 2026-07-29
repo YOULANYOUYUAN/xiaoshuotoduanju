@@ -31,6 +31,18 @@ export interface NovelChapterPage {
   limit: number
 }
 
+export interface NovelChapterCleanStatus {
+  id: number
+  publicId: string
+  chapterIndex: number
+  reel: string
+  chapter: string
+  event: string
+  eventState: EventState
+  errorReason: string | null
+  updatedAt: string
+}
+
 export interface NovelChapterListParams {
   page: number
   limit: number
@@ -89,33 +101,51 @@ export interface CrawlSourcePayload {
   desc: string
   sourceType: CrawlSourceType
   searchUrlTemplate: string
-  listItemSelector: string
-  listTitleSelector: string
-  listAuthorSelector: string
-  listLinkSelector: string
-  detailTitleSelector: string
-  detailContentSelector: string
-  detailNextSelector: string
+  apiSearchMethod: CrawlHttpMethod
+  apiSearchHeaders: string
+  apiSearchBody: string
+  apiSearchBookUrlPath: string
+  apiSearchBookIdPath: string
+  apiSearchBookTitlePath: string
+  apiSearchBookAuthorPath: string
+  apiSearchBookIntroPath: string
+  apiSearchBookCoverPath: string
+  apiSearchBookCategoryPath: string
+  apiSearchBookUpdateStatusPath: string
+  apiSearchBookLastChapterPath: string
+  apiSearchBookLastChapterIdPath: string
+  apiSearchBookLastUpdatePath: string
   apiBookUrl: string
+  apiBookMethod: CrawlHttpMethod
+  apiBookHeaders: string
+  apiBookBody: string
   apiBookTitlePath: string
   apiBookAuthorPath: string
   apiBookIntroPath: string
+  apiBookLastChapterPath: string
   apiBookLastChapterIdPath: string
+  apiBookLastUpdatePath: string
   apiBookCoverPath: string
+  apiBookCategoryPath: string
+  apiBookUpdateStatusPath: string
+  apiBookIdPath: string
+  apiChapterListUrl: string
+  apiChapterListMethod: CrawlHttpMethod
+  apiChapterListHeaders: string
+  apiChapterListBody: string
+  apiChapterListNamePath: string
+  apiChapterListIdPath: string
+  apiChapterListContentPath: string
+  apiChapterListTimePath: string
+  apiChapterListMd5Path: string
   apiChapterUrl: string
+  apiChapterMethod: CrawlHttpMethod
+  apiChapterHeaders: string
+  apiChapterBody: string
   apiChapterNamePath: string
   apiChapterContentPath: string
   apiChapterTimePath: string
   apiChapterMd5Path: string
-  apiSearchMethod: CrawlHttpMethod
-  apiSearchHeaders: string
-  apiSearchBody: string
-  apiBookMethod: CrawlHttpMethod
-  apiBookHeaders: string
-  apiBookBody: string
-  apiChapterMethod: CrawlHttpMethod
-  apiChapterHeaders: string
-  apiChapterBody: string
   builtin: boolean
   projectPublicId?: string | null
 }
@@ -198,6 +228,19 @@ export interface CrawlChapterFetchPayload {
   endChapter: number
 }
 
+export interface CrawlBookDetailPayload {
+  sourceKey: string
+  book: CrawlSearchResult
+}
+
+export interface CrawlBookDetailResult {
+  book: CrawlSearchResult
+}
+
+export interface CrawlBookChapterCountResult extends CrawlBookDetailResult {
+  lastchapterid: number
+}
+
 export interface CrawlImportPayload {
   sourceKey: string
   book: CrawlSearchResult
@@ -227,6 +270,15 @@ export const listNovelChaptersApi = (
   params: NovelChapterListParams,
 ) => (
   request.get<NovelChapterPage>(`${projectNovelPath(projectPublicId)}`, { params })
+)
+
+export const listNovelChapterCleanStatusesApi = (
+  projectPublicId: string,
+  ids: number[],
+) => (
+  request.get<NovelChapterCleanStatus[]>(`${projectNovelPath(projectPublicId)}/clean/status`, {
+    params: { ids: ids.join(',') },
+  })
 )
 
 export const createNovelChapterApi = (
@@ -275,14 +327,14 @@ export const cleanNovelChapterApi = (
   projectPublicId: string,
   chapterId: number,
 ) => (
-  request.post<NovelChapterRecord>(`${projectNovelPath(projectPublicId)}/${chapterId}/clean`, undefined, { timeout: 120000 })
+  request.post<NovelChapterRecord>(`${projectNovelPath(projectPublicId)}/${chapterId}/clean`, undefined, { timeout: 300000 })
 )
 
 export const batchCleanNovelChaptersApi = (
   projectPublicId: string,
   payload: NovelChapterBatchPayload,
 ) => (
-  request.post<NovelChapterBatchResult>(`${projectNovelPath(projectPublicId)}/batch-clean`, payload, { timeout: 120000 })
+  request.post<NovelChapterBatchCleanSubmitResult>(`${projectNovelPath(projectPublicId)}/batch-clean`, payload, { timeout: 600000 })
 )
 
 export const listCrawlSourcesApi = (
@@ -346,6 +398,24 @@ export const searchCrawlBooksApi = (
   request.post<CrawlSearchResult[]>(`${projectNovelPath(projectPublicId)}/crawl/search`, payload, { timeout: 120000 })
 )
 
+export const fetchCrawlBookDetailApi = (
+  projectPublicId: string,
+  payload: CrawlBookDetailPayload,
+) => (
+  request.post<CrawlBookDetailResult>(`${projectNovelPath(projectPublicId)}/crawl/book-detail`, payload, { timeout: 120000 })
+)
+
+export const fetchCrawlBookChapterCountApi = (
+  projectPublicId: string,
+  payload: CrawlBookDetailPayload,
+) => (
+  request.post<CrawlBookChapterCountResult>(
+    `${projectNovelPath(projectPublicId)}/crawl/book-chapter-count`,
+    payload,
+    { timeout: 120000 },
+  )
+)
+
 export const fetchCrawlChaptersApi = (
   projectPublicId: string,
   payload: CrawlChapterFetchPayload,
@@ -366,4 +436,81 @@ export const importCrawlChaptersApi = (
 
 const projectNovelPath = (projectPublicId: string) => (
   `/projects/${encodeURIComponent(projectPublicId.trim())}/novels`
+)
+
+export interface NovelChapterBatchCleanCancelResult {
+  jobPublicId: string
+  canceledCount: number
+}
+
+export interface NovelChapterBatchCleanItem {
+  chapterId: number
+  chapterPublicId: string
+  chapterIndex: number
+  chapterTitle: string
+  reel: string
+  itemPublicId: string
+  itemStatus: 'pending' | 'running' | 'succeeded' | 'failed' | 'canceled' | 'paused'
+  eventState: number
+  event: string
+  errorReason: string | null
+}
+
+export interface NovelChapterBatchCleanProgress {
+  jobPublicId: string
+  jobStatus: string
+  totalCount: number
+  pendingCount: number
+  runningCount: number
+  succeededCount: number
+  failedCount: number
+  canceledCount: number
+  pausedCount: number
+  finishedCount: number
+  isFinished: boolean
+  items: NovelChapterBatchCleanItem[]
+}
+
+export type NovelChapterBatchCleanSubmitResult = NovelChapterBatchResult | NovelChapterBatchCleanProgress
+
+export interface NovelChapterBatchCleanActiveJob {
+  jobPublicId: string
+  jobStatus: 'pending' | 'running' | 'paused'
+  totalCount: number
+  pendingCount: number
+  runningCount: number
+  pausedCount: number
+  createdAt: string | null
+}
+
+
+export interface NovelChapterBatchCleanActiveJobList {
+  items: NovelChapterBatchCleanActiveJob[]
+}
+
+export const cancelBatchCleanJobApi = (
+  projectPublicId: string,
+  jobPublicId: string,
+) => (
+  request.post<NovelChapterBatchCleanCancelResult>(
+    `${projectNovelPath(projectPublicId)}/batch-clean/jobs/${encodeURIComponent(jobPublicId)}/cancel`,
+  )
+)
+
+
+export const getBatchCleanJobProgressApi = (
+  projectPublicId: string,
+  jobPublicId: string,
+) => (
+  request.get<NovelChapterBatchCleanProgress>(
+    `${projectNovelPath(projectPublicId)}/batch-clean/jobs/${encodeURIComponent(jobPublicId)}`,
+  )
+)
+
+export const listActiveBatchCleanJobsApi = (
+  projectPublicId: string,
+) => (
+  request.get<NovelChapterBatchCleanActiveJobList>(
+    `${projectNovelPath(projectPublicId)}/batch-clean/jobs/active`,
+  )
 )
